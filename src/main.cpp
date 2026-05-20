@@ -57,8 +57,32 @@ void setup() {
     }
   }
 }
-void motor (){
 
+void bottons(){
+  Serial.println("Checking buttons...");
+  if (digitalRead(pulser1) == HIGH) {
+    constantforcontrol = constantforcontrol + 1 ;
+    delayMicroseconds(100);
+    Serial.println("Pulser1 is pressed. Incrementing constantforcontrol.");
+  }
+  if (digitalRead(pulser2) == HIGH){
+    constantforcontrol = constantforcontrol - 1 ;
+    delayMicroseconds(100);
+    Serial.println("Pulser2 is pressed. Decrementing constantforcontrol.");
+  }
+  if (digitalRead(pulser3) == HIGH){
+    pulsespeed = pulsespeed + 10  ;
+    delayMicroseconds(100);
+    Serial.println("Pulser3 is pressed. Increasing pulsespeed.");
+  }
+  if (digitalRead(pulser4) == HIGH){
+   pulsespeed = pulsespeed - 10 ;
+    delayMicroseconds(100);
+    Serial.println("Pulser4 is pressed. Decreasing pulsespeed.");
+  }
+}
+
+void motor (){
   digitalWrite(motorstep, HIGH );
   delay(pulsespeed);
   digitalWrite(motorstep, LOW);
@@ -75,7 +99,7 @@ void readtemperature(){
 
   for (int i = 0; i < samples; i++) {
     sensorValue += analogRead(tempsignal);
-    delay(100);
+    delayMicroseconds(100);
   }
   sensorValue /= samples; 
   Serial.print("Sensor Value: ");
@@ -99,7 +123,7 @@ void readtemperature(){
   Serial.print(steinhart);
   Serial.println(" K");
   Serial.println();
-  delay (100);
+  delayMicroseconds (100);
 
 }
 
@@ -107,21 +131,6 @@ void setTemperature(){
   analogWrite(tempcontrol, constantforcontrol);
   Serial.print("constatntforcontrol: ");
   Serial.println(constantforcontrol);
-}
-
-void bottons(){
-  if (digitalRead(pulser1) == HIGH) {
-    constantforcontrol = constantforcontrol + 1 ;
-  }
-  if (digitalRead(pulser2) == HIGH){
-    constantforcontrol = constantforcontrol - 1 ;
-  }
-  if (digitalRead(pulser3) == HIGH){
-    pulsespeed = pulsespeed + 10  ;
-  }
-  if (digitalRead(pulser4) == HIGH){
-   pulsespeed = pulsespeed - 10 ;
-  }
 }
 
 void loop() {
@@ -134,7 +143,7 @@ void loop() {
   lcd.setCursor(9, 1);
   lcd.print(pulsespeed);
 
-bottons();
+//bottons();
 Serial.println (pulsespeed);
 motor();
 readtemperature();
