@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
+#include <AccelStepper.h>
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); 
 const int pulser1 = 13;
@@ -19,7 +20,7 @@ int constantforcontrol = 100;
 float sensorValue;
 float tempC;
 
-int pulsespeed = 300;
+int pulsespeed = 1000;
 
 void setup() {
 
@@ -43,7 +44,7 @@ void setup() {
   pinMode(tempsignal, INPUT);
   pinMode(tempcontrol, OUTPUT);
 
-  digitalWrite(motordir, HIGH);
+  digitalWrite(motordir, LOW);
 
   Serial.begin(9600);
 
@@ -84,9 +85,9 @@ void bottons(){
 
 void motor (){
   digitalWrite(motorstep, HIGH );
-  delay(pulsespeed);
+  delayMicroseconds(pulsespeed);
   digitalWrite(motorstep, LOW);
-  delay(pulsespeed);
+  delayMicroseconds(pulsespeed);
 
 }
 
@@ -143,7 +144,7 @@ void loop() {
   lcd.setCursor(9, 1);
   lcd.print(pulsespeed);
 
-//bottons();
+bottons();
 Serial.println (pulsespeed);
 motor();
 readtemperature();
