@@ -3,7 +3,6 @@
 #include <LiquidCrystal_I2C.h>
 #include <AccelStepper.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 2); 
 const int pulser1 = 13;
 const int pulser2 = 12;
 const int pulser3 = 11;
@@ -12,15 +11,20 @@ const int pulser5 = 9;
 const int motorstep = 7;
 const int motordir = 8;
 const int tempsignal = A0;
-const int tempcontrol = 5;
+const int tempcontrol = 6;
+
+LiquidCrystal_I2C lcd(0x27, 16, 2); 
+AccelStepper stepper(AccelStepper::DRIVER, motorstep, motordir);
 
 float temperatureValue = 0.0;
 float steinhart;
 int constantforcontrol = 100;
-float sensorValue;
+float sensorValue ;
 float tempC;
 
-int pulsespeed = 1000;
+int pulseSpeed = -10;
+
+unsigned long lastUpdate = 0;
 
 void setup() {
 
@@ -48,50 +52,55 @@ void setup() {
 
   Serial.begin(9600);
 
-  Wire.begin();
-  Serial.println("Scanning for I2C devices...");
-  for (byte i = 1; i < 127; i++) {
-    Wire.beginTransmission(i);
-    if (Wire.endTransmission() == 0) {
-      Serial.print("I2C device found at address 0x");
-      Serial.println(i, HEX);
-    }
-  }
-}
+    //   Wire.begin();
+    //   Serial.println("Scanning for I2C devices...");
+    //   for (byte i = 1; i < 127; i++) {
+    //   Wire.beginTransmission(i);
+    //     if (Wire.endTransmission() == 0) {
+    //       Serial.print("I2C device found at address 0x");
+    //       Serial.println(i, HEX);
+    //        }
+        //   }
+  stepper.setMaxSpeed(3000);    // Maximum possible steps per second
+  stepper.setSpeed(pulseSpeed);
+ }
 
-void bottons(){
+void checkbuttons(){
   Serial.println("Checking buttons...");
-  if (digitalRead(pulser1) == HIGH) {
-    constantforcontrol = constantforcontrol + 1 ;
-    delayMicroseconds(100);
+  if (digitalRead(pulser1) == LOW) {
+    constantforcontrol++;
+    if (constantforcontrol > 255) constantforcontrol = 255; 
+    delay(50); 
     Serial.println("Pulser1 is pressed. Incrementing constantforcontrol.");
   }
-  if (digitalRead(pulser2) == HIGH){
-    constantforcontrol = constantforcontrol - 1 ;
-    delayMicroseconds(100);
+  if (digitalRead(pulser2) == HIGH) {
+    constantforcontrol--;
+    if (constantforcontrol < 0) constantforcontrol = 0;
+    delay(50);
     Serial.println("Pulser2 is pressed. Decrementing constantforcontrol.");
   }
   if (digitalRead(pulser3) == HIGH){
-    pulsespeed = pulsespeed + 10  ;
-    delayMicroseconds(100);
-    Serial.println("Pulser3 is pressed. Increasing pulsespeed.");
+    pulseSpeed = pulseSpeed - 1  ;
+    delay(50);
+    Serial.println("Pulser3 is pressed. Increasing pulseSpeed.");
   }
   if (digitalRead(pulser4) == HIGH){
-   pulsespeed = pulsespeed - 10 ;
-    delayMicroseconds(100);
-    Serial.println("Pulser4 is pressed. Decreasing pulsespeed.");
+   pulseSpeed = pulseSpeed + 1 ;
+    delay(50);
+    Serial.println("Pulser4 is pressed. Decreasing pulseSpeed.");
   }
 }
 
-void motor (){
-  digitalWrite(motorstep, HIGH );
-  delayMicroseconds(pulsespeed);
-  digitalWrite(motorstep, LOW);
-  delayMicroseconds(pulsespeed);
+// void motor (){
+//   digitalWrite(motorstep, HIGH );
+//   delayMicroseconds(pulseSpeed);
+//   digitalWrite(motorstep, LOW);
+//   delayMicroseconds(pulseSpeed);
 
-}
+// }
 
 void readtemperature(){
+  float sensorValue = 0.0;
   int samples = 5;
   const float SERIESRESISTOR = 100000.0; 
   const float NOMINAL_RESISTANCE = 100000.0; 
@@ -102,10 +111,14 @@ void readtemperature(){
     sensorValue += analogRead(tempsignal);
     delayMicroseconds(100);
   }
+ 
   sensorValue /= samples; 
   Serial.print("Sensor Value: ");
   Serial.println(sensorValue);
 
+  if (sensorValue >= 1023) {
+    sensorValue = 1022;
+  }
   sensorValue = 1023.0 / sensorValue - 1.0;
   float resistance = SERIESRESISTOR / sensorValue;
 
@@ -134,19 +147,37 @@ void setTemperature(){
   Serial.println(constantforcontrol);
 }
 
-void loop() {
+void lcdDisplay () {
   lcd.setCursor(0, 0);
-  lcd.print("Temperature:");
-  lcd.setCursor(12, 0);
+  lcd.print("Temp:");
+  lcd.setCursor(5, 0);
   lcd.print(tempC);
   lcd.setCursor(0, 1);
   lcd.print("Speed:");
-  lcd.setCursor(9, 1);
-  lcd.print(pulsespeed);
+  lcd.setCursor(6, 1);
+  lcd.print(abs(pulseSpeed));
+}
 
-bottons();
-Serial.println (pulsespeed);
-motor();
-readtemperature();
-setTemperature();
+void loop() {
+if (constantforcontrol >= 255) {constantforcontrol = 255; }
+if (constantforcontrol <= 0) {constantforcontrol = 0; }
+if (pulseSpeed >= 3000) {pulseSpeed = 3000; }
+if (pulseSpeed <= 0) {pulseSpeed = 0; }
+
+stepper.runSpeed();
+
+if (millis() - lastUpdate >= 1000) {
+
+  lcdDisplay();
+
+  //checkbuttons();
+
+  //motor();
+
+  readtemperature();
+
+  setTemperature();
+
+  lastUpdate = millis();
+}
 }
